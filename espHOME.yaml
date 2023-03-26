@@ -1,0 +1,63 @@
+esphome:
+  name: esphome-web-9c7f94
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esphome-Web-9C7F94"
+    password: "YVeteyWe2y9L"
+    
+mqtt:
+  broker: "tcp://127.0.0.1:1883"
+  username: "telegraf"
+  password: "metricsmetricsmetricsmetrics"
+
+captive_portal:
+sensor:
+  - platform: dht
+    pin: GPIO4
+    temperature:
+      name: "Temperature garage"
+      id: dht11_0_t
+    humidity:
+      name: "Humidity garage"
+      id: dht11_0_h
+    update_interval: 60s
+
+  - platform: template
+    name: "Dew Point"
+    lambda: |-
+      return (243.5*(log(id(dht11_0_h).state/100)+((17.67*id(dht11_0_t).state)/
+      (243.5+id(dht11_0_t).state)))/(17.67-log(id(dht11_0_h).state/100)-
+      ((17.67*id(dht11_0_t).state)/(243.5+id(dht11_0_t).state))));
+    update_interval: 60s
+    unit_of_measurement: °C
+    icon: 'mdi:thermometer-alert'
+
+interval:
+  - interval: 60s
+    then:
+      - mqtt.publish_json:
+          topic: telegraf/host01/cpu
+          payload: |-
+            root["T_garage"] = id(dht11_0_t).state;
+            root["H_garage"] = id(dht11_0_h).state;
+
+  
